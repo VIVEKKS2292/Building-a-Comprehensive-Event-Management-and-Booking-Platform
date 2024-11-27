@@ -28,9 +28,30 @@ func main() {
 		eventRoutes.DELETE("/:id", controllers.DeleteEvent)
 	}
 
+	// Event and user routes with authorization checks
 	r.GET("/events", middleware.AuthMiddleware("Admin", "User", "Organizer"), controllers.GetEvents)
-	// Public route for filtering events
 	r.GET("/events/filter", middleware.AuthMiddleware("Admin", "User", "Organizer"), controllers.FilterEvents)
+
+	// Ticket Booking routes
+	bookingRoutes := r.Group("/bookings")
+	{
+		bookingRoutes.Use(middleware.AuthMiddleware("User"))
+		bookingRoutes.POST("/", controllers.BookTicket)
+		bookingRoutes.DELETE("/:id", controllers.CancelBooking)
+		bookingRoutes.GET("/availability", controllers.CheckTicketAvailability)
+		bookingRoutes.POST("/payments", controllers.HandlePayment)
+	}
+
+	// Ticket Availability routes (only Admin and Organizer)
+	ticketAvailabilityRoutes := r.Group("/ticket-availability")
+	{
+		ticketAvailabilityRoutes.Use(middleware.AuthMiddleware("Admin", "Organizer"))
+		ticketAvailabilityRoutes.POST("/", controllers.CreateTicketAvailability)         // Create new ticket availability
+		ticketAvailabilityRoutes.GET("/:event_id", controllers.GetTicketAvailability)    // Get ticket availability for specific event
+		ticketAvailabilityRoutes.PUT("/:event_id", controllers.UpdateTicketAvailability) // Update ticket availability for specific event
+	}
+
+	r.GET("/realtime/tickets", controllers.TicketUpdates)
 
 	// Start the server
 	r.Run(":8080")

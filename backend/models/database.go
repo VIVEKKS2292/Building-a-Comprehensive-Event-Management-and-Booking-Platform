@@ -19,5 +19,5 @@ func InitDB() {
 	log.Println("Database connected successfully!")
 
 	// Run migrations for both User and Event models
-	DB.AutoMigrate(&User{}, &Event{})
+	DB.AutoMigrate(&User{}, &Event{}, &Booking{}, &TicketAvailability{}, &Transaction{})
 }
