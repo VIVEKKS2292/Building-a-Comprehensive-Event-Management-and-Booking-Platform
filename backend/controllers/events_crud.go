@@ -54,23 +54,65 @@ func UpdateEvent(c *gin.Context) {
 	var event models.Event
 	id := c.Param("id")
 
+	// Extract user ID from middleware
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized user"})
+		return
+	}
+
+	// Fetch the event by ID
 	if err := models.DB.First(&event, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
 		return
 	}
 
+	// Check if the event belongs to the logged-in user
+	if event.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to update this event"})
+		return
+	}
+
+	// Bind JSON payload to the event model
 	if err := c.ShouldBindJSON(&event); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	models.DB.Save(&event)
+	// Save the updated event
+	if err := models.DB.Save(&event).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update event"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Event updated successfully"})
 }
 
 func DeleteEvent(c *gin.Context) {
 	id := c.Param("id")
-	if result := models.DB.Delete(&models.Event{}, id); result.Error != nil {
+
+	// Extract user ID from middleware
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized user"})
+		return
+	}
+
+	// Fetch the event to check ownership
+	var event models.Event
+	if err := models.DB.First(&event, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
+		return
+	}
+
+	// Check if the event belongs to the logged-in user
+	if event.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to delete this event"})
+		return
+	}
+
+	// Delete the event
+	if result := models.DB.Delete(&event); result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete event"})
 		return
 	}
