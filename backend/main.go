@@ -53,6 +53,24 @@ func main() {
 
 	r.GET("/realtime/tickets", controllers.TicketUpdates)
 
+	// Wishlist routes
+	wishlistRoutes := r.Group("/wishlist")
+	{
+		wishlistRoutes.Use(middleware.AuthMiddleware("User"))
+		wishlistRoutes.POST("/:event_id", controllers.AddToWishlist)        // Add event to wishlist
+		wishlistRoutes.GET("/", controllers.GetWishlist)                    // Get user's wishlist
+		wishlistRoutes.DELETE("/:event_id", controllers.RemoveFromWishlist) // Remove event from wishlist
+	}
+
+	// Event Analytics routes
+	analyticsRoutes := r.Group("/analytics")
+	{
+		analyticsRoutes.Use(middleware.AuthMiddleware("Organizer"))
+		analyticsRoutes.GET("/ticket-sales", controllers.GetTicketSalesAnalytics)          // Get ticket sales analytics
+		analyticsRoutes.GET("/revenue", controllers.GetRevenueAnalytics)                   // Get revenue analytics
+		analyticsRoutes.GET("/attendee-demographics", controllers.GetAttendeeDemographics) // Get attendee demographics
+	}
+
 	// Start the server
 	r.Run(":8080")
 }
