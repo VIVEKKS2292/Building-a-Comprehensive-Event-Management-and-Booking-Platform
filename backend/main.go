@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gin-contrib/cors" // Import the CORS middleware
 	"github.com/gin-gonic/gin"
 
 	"backend/controllers"
@@ -14,6 +15,14 @@ func main() {
 
 	// Create Gin router
 	r := gin.Default()
+
+	// Configure CORS middleware
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"}, // Allow frontend to connect
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 
 	// Public routes
 	r.POST("/register", controllers.Register)
@@ -69,6 +78,14 @@ func main() {
 		analyticsRoutes.GET("/ticket-sales", controllers.GetTicketSalesAnalytics)          // Get ticket sales analytics
 		analyticsRoutes.GET("/revenue", controllers.GetRevenueAnalytics)                   // Get revenue analytics
 		analyticsRoutes.GET("/attendee-demographics", controllers.GetAttendeeDemographics) // Get attendee demographics
+	}
+
+	// Organization routes
+	organizationRoutes := r.Group("/organizations")
+	{
+		organizationRoutes.Use(middleware.AuthMiddleware("Organizer"))
+		organizationRoutes.POST("/", controllers.CreateOrganization)
+		organizationRoutes.PUT("/:id", controllers.UpdateOrganization)
 	}
 
 	// Start the server
